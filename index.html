@@ -107,6 +107,24 @@ async function status() {
   el.innerHTML = "<div class='res'>Laden...</div>";
   try {
     let html = "";
+    // Vaste maandagboeking: status van de eerstvolgende maandag
+    try {
+      const nmd = new Date(); const add = (1 - nmd.getDay() + 7) % 7 || 7;
+      nmd.setDate(nmd.getDate() + add);
+      const ma = nmd.toISOString().slice(0, 10);
+      let maLine = "\u23f3 wordt vrijdagavond om 20:00 automatisch geboekt (lukt dat niet: 21:00)";
+      let maClass = "";
+      try {
+        const r20 = await (await fetch((await gh("/contents/results/result_" + ma + "_2000.json")).download_url)).json();
+        if (r20.success) { maLine = "\u2705 geboekt: 20:00-" + (r20.booking.end_time || "21:00") + " op " + r20.booking.court; maClass = " ok"; }
+        else {
+          const r21 = await (await fetch((await gh("/contents/results/result_" + ma + "_2100.json")).download_url)).json();
+          if (r21.success) { maLine = "\u2705 geboekt: 21:00-" + (r21.booking.end_time || "22:00") + " op " + r21.booking.court + " (20:00 was vol)"; maClass = " ok"; }
+          else { maLine = "\u274c niet gelukt (20:00 en 21:00 vol of fout)"; maClass = " fail"; }
+        }
+      } catch (e) { /* nog geen resultaat: standaardtekst */ }
+      html += "<div class='res" + maClass + "'><b>Vaste boeking \u2014 maandag " + ma.split("-").reverse().join("-") + ":</b><br>" + maLine + "</div>";
+    } catch (e) {}
     try {
       const files = await gh("/contents/results");
       const recent = files.filter(f => f.name.startsWith("result_")).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 5);
