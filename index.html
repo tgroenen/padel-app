@@ -79,6 +79,14 @@ async function gh(path, opts = {}) {
   if (!r.ok && r.status !== 204) throw new Error(r.status + " " + (await r.text()).slice(0, 200));
   return r.status === 204 ? null : r.json();
 }
+async function ghRaw(path) {
+  const c = cfg();
+  const r = await fetch("https://api.github.com/repos/" + c.repo + path, {
+    headers: { "Authorization": "Bearer " + c.token, "Accept": "application/vnd.github.raw+json", "X-GitHub-Api-Version": "2022-11-28" }
+  });
+  if (!r.ok) throw new Error(r.status + " bij " + path);
+  return r.json();
+}
 function show(t, ok) { const m = document.getElementById("msg"); m.textContent = t; m.style.color = ok ? "var(--ok)" : "var(--fout)"; }
 async function boek() {
   if (!ensureCfg()) return;
@@ -115,10 +123,10 @@ async function status() {
       let maLine = "\u23f3 wordt vrijdagavond om 20:00 automatisch geboekt (lukt dat niet: 21:00)";
       let maClass = "";
       try {
-        const r20 = await (await fetch((await gh("/contents/results/result_" + ma + "_2000.json")).download_url)).json();
+        const r20 = await ghRaw("/contents/results/result_" + ma + "_2000.json");
         if (r20.success) { maLine = "\u2705 geboekt: 20:00-" + (r20.booking.end_time || "21:00") + " op " + r20.booking.court; maClass = " ok"; }
         else {
-          const r21 = await (await fetch((await gh("/contents/results/result_" + ma + "_2100.json")).download_url)).json();
+          const r21 = await ghRaw("/contents/results/result_" + ma + "_2100.json");
           if (r21.success) { maLine = "\u2705 geboekt: 21:00-" + (r21.booking.end_time || "22:00") + " op " + r21.booking.court + " (20:00 was vol)"; maClass = " ok"; }
           else { maLine = "\u274c niet gelukt (20:00 en 21:00 vol of fout)"; maClass = " fail"; }
         }
@@ -129,7 +137,7 @@ async function status() {
       const files = await gh("/contents/results");
       const recent = files.filter(f => f.name.startsWith("result_")).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 5);
       for (const f of recent) {
-        const d = await (await fetch(f.download_url)).json();
+        const d = await ghRaw("/contents/" + f.path);
         const b = d.booking || {};
         html += "<div class='res " + (d.success ? "ok" : "fail") + "'>" + d.date + " " + d.time +
           (d.dry_run ? " (dry-run)" : "") + ": " + (d.success ? ("✅ " + (b.court || "") + " — id " + (b.id || "")) : "❌ niet gelukt") + "</div>";
