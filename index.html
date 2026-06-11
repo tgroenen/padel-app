@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Padel Booker</title>
+<style>
+  :root { --groen:#1378a1; --ok:#16a766; --fout:#cc3a21; }
+  * { box-sizing:border-box; font-family:-apple-system,Segoe UI,Roboto,sans-serif; }
+  body { margin:0; background:#f4f6f8; color:#222; }
+  header { background:var(--groen); color:#fff; padding:14px 16px; font-size:20px; font-weight:700; }
+  main { padding:14px; max-width:480px; margin:0 auto; }
+  .card { background:#fff; border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  h2 { margin:0 0 10px; font-size:16px; }
+  label { display:block; font-size:13px; color:#555; margin:8px 0 3px; }
+  input, select { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:16px; }
+  button { width:100%; padding:12px; margin-top:12px; border:0; border-radius:8px; background:var(--groen); color:#fff; font-size:16px; font-weight:600; }
+  button.sec { background:#e8edf1; color:#222; }
+  .row { display:flex; gap:10px; } .row > div { flex:1; }
+  .res { padding:8px 10px; border-radius:8px; margin-top:8px; font-size:14px; background:#eef2f5; }
+  .res.ok { background:#e6f6ec; } .res.fail { background:#fdeae6; }
+  #msg { margin-top:10px; font-size:14px; }
+  small { color:#777; }
+</style>
+</head>
+<body>
+<header>🎾 Padel Booker — Bent Sports</header>
+<main>
+  <div class="card" id="setup" style="display:none">
+    <h2>Eenmalige instellingen</h2>
+    <label>GitHub repo (eigenaar/naam)</label>
+    <input id="repo" value="tgroenen/padelbooker">
+    <label>Fine-grained token (alleen deze repo, Actions: read/write)</label>
+    <input id="token" type="password" placeholder="github_pat_...">
+    <button onclick="saveCfg()">Opslaan</button>
+  </div>
+
+  <div class="card">
+    <h2>Baan boeken</h2>
+    <label>Datum</label>
+    <input id="datum" type="date">
+    <div class="row">
+      <div><label>Begintijd</label><input id="tijd" type="time" value="20:00" step="900"></div>
+      <div><label>Duur</label><select id="duur"><option value="60">60 min</option><option value="90">90 min</option><option value="30">30 min</option></select></div>
+    </div>
+    <label><input type="checkbox" id="dryrun" style="width:auto"> Dry-run (testen, niet echt boeken)</label>
+    <button onclick="boek()">Inplannen</button>
+    <div id="msg"></div>
+    <small>De boeking wordt automatisch uitgevoerd op het moment dat het slot opent (72 uur vooraf).</small>
+  </div>
+
+  <div class="card">
+    <h2>Recente resultaten</h2>
+    <button class="sec" onclick="status()">Vernieuwen</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>Annuleren</h2>
+    <label>Reserverings-ID</label>
+    <input id="resid" inputmode="numeric" placeholder="bv 12956095">
+    <button class="sec" onclick="annuleer()">Annuleer reservering</button>
+  </div>
+
+  <div class="card"><button class="sec" onclick="resetCfg()">Instellingen wijzigen</button></div>
+</main>
+<script>
+const LS = localStorage;
+function cfg() { return { repo: LS.getItem("pb_repo"), token: LS.getItem("pb_token") }; }
+function ensureCfg() { const c = cfg(); document.getElementById("setup").style.display = (c.repo && c.token) ? "none" : "block"; return c.repo && c.token; }
+function saveCfg() { LS.setItem("pb_repo", document.getElementById("repo").value.trim()); LS.setItem("pb_token", document.getElementById("token").value.trim()); ensureCfg(); status(); }
+function resetCfg() { document.getElementById("setup").style.display = "block"; }
+async function gh(path, opts = {}) {
+  const c = cfg();
+  const r = await fetch("https://api.github.com/repos/" + c.repo + path, Object.assign({
+    headers: { "Authorization": "Bearer " + c.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+  }, opts));
+  if (!r.ok && r.status !== 204) throw new Error(r.status + " " + (await r.text()).slice(0, 200));
+  return r.status === 204 ? null : r.json();
+}
+function show(t, ok) { const m = document.getElementById("msg"); m.textContent = t; m.style.color = ok ? "var(--ok)" : "var(--fout)"; }
+async function boek() {
+  if (!ensureCfg()) return;
+  const datum = document.getElementById("datum").value, tijd = document.getElementById("tijd").value;
+  if (!datum || !tijd) return show("Vul datum en tijd in.", false);
+  try {
+    await gh("/actions/workflows/aanvraag.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: {
+      datum: datum, tijd: tijd, duur: document.getElementById("duur").value,
+      dryrun: document.getElementById("dryrun").checked ? "true" : "false" } }) });
+    show("Aanvraag verstuurd: " + datum + " " + tijd + ". Boeking volgt zodra het slot opent.", true);
+  } catch (e) { show("Mislukt: " + e.message, false); }
+}
+async function annuleer() {
+  if (!ensureCfg()) return;
+  const id = document.getElementById("resid").value.trim();
+  if (!id) return;
+  if (!confirm("Reservering " + id + " annuleren? Na 60 min kunnen er kosten zijn.")) return;
+  try {
+    await gh("/actions/workflows/annuleer.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { reserveringsid: id } }) });
+    show("Annulering gestart voor #" + id + ".", true);
+  } catch (e) { show("Mislukt: " + e.message, false); }
+}
+async function status() {
+  if (!ensureCfg()) return;
+  const el = document.getElementById("status");
+  el.innerHTML = "<div class='res'>Laden...</div>";
+  try {
+    let html = "";
+    try {
+      const files = await gh("/contents/results");
+      const recent = files.filter(f => f.name.startsWith("result_")).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 5);
+      for (const f of recent) {
+        const d = await (await fetch(f.download_url)).json();
+        const b = d.booking || {};
+        html += "<div class='res " + (d.success ? "ok" : "fail") + "'>" + d.date + " " + d.time +
+          (d.dry_run ? " (dry-run)" : "") + ": " + (d.success ? ("✅ " + (b.court || "") + " — id " + (b.id || "")) : "❌ niet gelukt") + "</div>";
+      }
+    } catch (e) { html += "<div class='res'>Nog geen resultaten.</div>"; }
+    try {
+      const reqs = await gh("/contents/requests");
+      for (const f of reqs.filter(f => f.name.endsWith(".json"))) html += "<div class='res'>⏳ in de wachtrij: " + f.name.replace(".json", "").replace("_", " ") + "</div>";
+    } catch (e) {}
+    const runs = await gh("/actions/runs?per_page=3");
+    for (const r of (runs.workflow_runs || [])) html += "<div class='res'>" + r.name + ": " + (r.status === "completed" ? r.conclusion : r.status) + " <small>" + new Date(r.created_at).toLocaleString("nl-NL") + "</small></div>";
+    el.innerHTML = html || "<div class='res'>Niets te tonen.</div>";
+  } catch (e) { el.innerHTML = "<div class='res fail'>Fout: " + e.message + "</div>"; }
+}
+ensureCfg();
+const morgen = new Date(Date.now() + 4 * 86400000);
+document.getElementById("datum").value = morgen.toISOString().slice(0, 10);
+if (cfg().repo) status();
+</script>
+</body>
+</html>
