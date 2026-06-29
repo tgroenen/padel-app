@@ -2,160 +2,292 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Padel Booker</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Padel">
+<meta name="theme-color" content="#0f7a9c">
+<title>Padel boeken</title>
 <style>
-  :root { --groen:#1378a1; --ok:#16a766; --fout:#cc3a21; }
-  * { box-sizing:border-box; font-family:-apple-system,Segoe UI,Roboto,sans-serif; }
-  body { margin:0; background:#f4f6f8; color:#222; }
-  header { background:var(--groen); color:#fff; padding:14px 16px; font-size:20px; font-weight:700; }
-  main { padding:14px; max-width:480px; margin:0 auto; }
-  .card { background:#fff; border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-  h2 { margin:0 0 10px; font-size:16px; }
-  label { display:block; font-size:13px; color:#555; margin:8px 0 3px; }
-  input, select { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:16px; }
-  button { width:100%; padding:12px; margin-top:12px; border:0; border-radius:8px; background:var(--groen); color:#fff; font-size:16px; font-weight:600; }
-  button.sec { background:#e8edf1; color:#222; }
-  .row { display:flex; gap:10px; } .row > div { flex:1; }
-  .res { padding:8px 10px; border-radius:8px; margin-top:8px; font-size:14px; background:#eef2f5; }
-  .res.ok { background:#e6f6ec; } .res.fail { background:#fdeae6; }
-  #msg { margin-top:10px; font-size:14px; }
-  small { color:#777; }
+  :root{ --blue:#0f7a9c; --blue2:#0b5e79; --ok:#1a8f55; --okbg:#e7f6ee; --err:#c0392b; --errbg:#fdecea; --ink:#1c2530; --soft:#5d6b7a; --line:#dde4ea; --bg:#eef2f5; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  html,body{ margin:0; background:var(--bg); color:var(--ink); }
+  header{ background:var(--blue); color:#fff; padding:calc(env(safe-area-inset-top) + 16px) 18px 16px; display:flex; align-items:center; justify-content:space-between; }
+  header .title{ font-size:20px; font-weight:800; letter-spacing:.2px; }
+  header button{ background:rgba(255,255,255,.18); color:#fff; border:0; width:38px; height:38px; border-radius:10px; font-size:18px; }
+  main{ padding:16px; max-width:520px; margin:0 auto; }
+  .card{ background:#fff; border-radius:16px; padding:18px; margin-bottom:16px; box-shadow:0 1px 4px rgba(20,40,60,.08); }
+  h2{ margin:0 0 4px; font-size:17px; }
+  .sub{ color:var(--soft); font-size:13px; margin:0 0 14px; }
+  label{ display:block; font-size:13px; font-weight:600; color:var(--soft); margin:14px 0 6px; }
+  input,select{ width:100%; padding:13px; border:1.5px solid var(--line); border-radius:11px; font-size:17px; background:#fff; color:var(--ink); }
+  input:focus,select:focus{ outline:none; border-color:var(--blue); }
+  .row{ display:flex; gap:12px; } .row>div{ flex:1; }
+  .check{ display:flex; align-items:center; gap:10px; margin-top:16px; font-size:15px; font-weight:500; color:var(--ink); }
+  .check input{ width:22px; height:22px; flex:0 0 auto; accent-color:var(--blue); }
+  button.primary{ width:100%; padding:15px; margin-top:18px; border:0; border-radius:12px; background:var(--blue); color:#fff; font-size:17px; font-weight:700; }
+  button.primary:active{ background:var(--blue2); }
+  button.primary:disabled{ opacity:.55; }
+  .tabs{ display:flex; gap:8px; background:#e2e8ee; padding:5px; border-radius:13px; margin-bottom:16px; }
+  .tabs button{ flex:1; padding:11px; border:0; border-radius:10px; background:transparent; font-size:15px; font-weight:700; color:var(--soft); }
+  .tabs button.active{ background:#fff; color:var(--blue); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+  .hidden{ display:none; }
+  .msg{ margin-top:14px; padding:12px 14px; border-radius:11px; font-size:14.5px; line-height:1.4; display:none; }
+  .msg.ok{ display:block; background:var(--okbg); color:var(--ok); }
+  .msg.err{ display:block; background:var(--errbg); color:var(--err); }
+  .msg.info{ display:block; background:#eaf3f7; color:var(--blue2); }
+  .rule{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 0; border-top:1px solid var(--line); }
+  .rule:first-of-type{ border-top:0; }
+  .rule .txt{ font-size:15px; } .rule .txt b{ font-weight:700; }
+  .rule .txt small{ display:block; color:var(--soft); font-size:12.5px; margin-top:2px; }
+  .rule button{ border:0; background:#fbe9e7; color:var(--err); font-size:13px; font-weight:700; padding:9px 13px; border-radius:10px; flex:0 0 auto; }
+  .empty{ color:var(--soft); font-size:14px; padding:8px 0; }
+  .note{ color:var(--soft); font-size:12.5px; margin-top:14px; line-height:1.45; }
+  .steps{ font-size:14px; line-height:1.5; color:var(--ink); padding-left:18px; margin:8px 0; }
+  .steps li{ margin-bottom:6px; }
+  a{ color:var(--blue); }
 </style>
 </head>
 <body>
-<header>🎾 Padel Booker — Bent Sports</header>
+<header>
+  <span class="title">🎾 Padel boeken</span>
+  <button id="gear" title="Instellingen" onclick="toggleSetup()">⚙</button>
+</header>
 <main>
-  <div class="card" id="setup" style="display:none">
-    <h2>Eenmalige instellingen</h2>
-    <label>GitHub repo (eigenaar/naam)</label>
-    <input id="repo" value="tgroenen/padelbooker">
-    <label>Fine-grained token (alleen deze repo, Actions: read/write)</label>
-    <input id="token" type="password" placeholder="github_pat_...">
-    <button onclick="saveCfg()">Opslaan</button>
+
+  <!-- SETUP -->
+  <div class="card hidden" id="setup">
+    <h2>Eenmalig instellen</h2>
+    <p class="sub">Plak hier je toegangssleutel. Je telefoon onthoudt hem; dit hoeft maar één keer.</p>
+    <label>Toegangssleutel</label>
+    <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="primary" onclick="saveToken()">Opslaan</button>
+    <div class="msg" id="setupMsg"></div>
+    <p class="note">Weet je de sleutel niet? Vraag het even na — dit is de sleutel die toegang geeft tot je boekingssysteem.</p>
   </div>
 
-  <div class="card">
-    <h2>Baan boeken</h2>
-    <label>Datum</label>
-    <input id="datum" type="date">
-    <div class="row">
-      <div><label>Begintijd</label><input id="tijd" type="time" value="20:00" step="900"></div>
-      <div><label>Duur</label><select id="duur"><option value="60">60 min</option><option value="90">90 min</option><option value="30">30 min</option></select></div>
+  <!-- TABS -->
+  <div id="appArea" class="hidden">
+    <div class="tabs">
+      <button id="tabEen" class="active" onclick="showTab('een')">Eenmalig</button>
+      <button id="tabHerh" onclick="showTab('herh')">Herhaald</button>
     </div>
-    <label><input type="checkbox" id="dryrun" style="width:auto"> Dry-run (testen, niet echt boeken)</label>
-    <button onclick="boek()">Inplannen</button>
-    <div id="msg"></div>
-    <small>De boeking wordt automatisch uitgevoerd op het moment dat het slot opent (72 uur vooraf).</small>
+
+    <!-- EENMALIG -->
+    <div class="card" id="paneEen">
+      <h2>Eenmalige reservering</h2>
+      <p class="sub">Kies dag en tijd. De baan wordt automatisch geboekt zodra het slot opent (72 uur vooraf).</p>
+      <label>Datum</label>
+      <input id="eDate" type="date">
+      <label>Tijd</label>
+      <input id="eTime" type="time" value="20:00" step="900">
+      <div class="check"><input type="checkbox" id="eFb" checked><label for="eFb" style="margin:0;color:var(--ink);font-weight:500">Probeer een uur later als het vol is</label></div>
+      <button class="primary" id="eBtn" onclick="boekEenmalig()">Inplannen</button>
+      <div class="msg" id="eMsg"></div>
+    </div>
+
+    <!-- HERHAALD -->
+    <div class="card hidden" id="paneHerh">
+      <h2>Vaste reservering toevoegen</h2>
+      <p class="sub">Elke week op dezelfde dag en tijd, automatisch.</p>
+      <div class="row">
+        <div>
+          <label>Dag</label>
+          <select id="hDay">
+            <option value="1">Maandag</option><option value="2">Dinsdag</option>
+            <option value="3">Woensdag</option><option value="4">Donderdag</option>
+            <option value="5">Vrijdag</option><option value="6">Zaterdag</option>
+            <option value="7">Zondag</option>
+          </select>
+        </div>
+        <div><label>Tijd</label><input id="hTime" type="time" value="20:00" step="900"></div>
+      </div>
+      <div class="check"><input type="checkbox" id="hFb" checked><label for="hFb" style="margin:0;color:var(--ink);font-weight:500">Probeer een uur later als het vol is</label></div>
+      <button class="primary" id="hBtn" onclick="voegHerhalingToe()">Toevoegen</button>
+      <div class="msg" id="hMsg"></div>
+
+      <h2 style="margin-top:22px">Mijn vaste reserveringen</h2>
+      <div id="ruleList"><div class="empty">Laden…</div></div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Recente resultaten</h2>
-    <button class="sec" onclick="status()">Vernieuwen</button>
-    <div id="status"></div>
-  </div>
-
-  <div class="card">
-    <h2>Annuleren</h2>
-    <label>Reserverings-ID</label>
-    <input id="resid" inputmode="numeric" placeholder="bv 12956095">
-    <button class="sec" onclick="annuleer()">Annuleer reservering</button>
-  </div>
-
-  <div class="card"><button class="sec" onclick="resetCfg()">Instellingen wijzigen</button></div>
 </main>
+
 <script>
-const LS = localStorage;
-function cfg() { return { repo: LS.getItem("pb_repo"), token: LS.getItem("pb_token") }; }
-function ensureCfg() { const c = cfg(); document.getElementById("setup").style.display = (c.repo && c.token) ? "none" : "block"; return c.repo && c.token; }
-function saveCfg() { LS.setItem("pb_repo", document.getElementById("repo").value.trim()); LS.setItem("pb_token", document.getElementById("token").value.trim()); ensureCfg(); status(); }
-function resetCfg() { document.getElementById("setup").style.display = "block"; }
-async function gh(path, opts = {}) {
-  const c = cfg();
-  const r = await fetch("https://api.github.com/repos/" + c.repo + path, Object.assign({
-    headers: { "Authorization": "Bearer " + c.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
-  }, opts));
-  if (!r.ok && r.status !== 204) throw new Error(r.status + " " + (await r.text()).slice(0, 200));
-  return r.status === 204 ? null : r.json();
-}
-async function ghRaw(path) {
-  const c = cfg();
-  const r = await fetch("https://api.github.com/repos/" + c.repo + path, {
-    headers: { "Authorization": "Bearer " + c.token, "Accept": "application/vnd.github.raw+json", "X-GitHub-Api-Version": "2022-11-28" }
+const REPO = "tgroenen/padelbooker";
+const DAYS = {1:"maandag",2:"dinsdag",3:"woensdag",4:"donderdag",5:"vrijdag",6:"zaterdag",7:"zondag"};
+let TOKEN = localStorage.getItem("padel_token") || "";
+
+function b64encode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64decode(str){ return decodeURIComponent(escape(atob(str))); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function hhmm(t){ return t.replace(":",""); }
+function plusHour(t){ const [h,m]=t.split(":").map(Number); if(h>=22) return null; return pad(h+1)+":"+pad(m); }
+
+function showMsg(id, text, kind){ const e=document.getElementById(id); e.className="msg "+kind; e.innerHTML=text; }
+function clearMsg(id){ const e=document.getElementById(id); e.className="msg"; e.textContent=""; }
+
+async function api(path, method="GET", body=null){
+  const res = await fetch("https://api.github.com/repos/"+REPO+path, {
+    method,
+    headers:{ "Authorization":"Bearer "+TOKEN, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" },
+    body: body ? JSON.stringify(body) : null
   });
-  if (!r.ok) throw new Error(r.status + " bij " + path);
+  return res;
+}
+
+async function getFile(path){
+  const r = await api("/contents/"+path);
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error(await readErr(r));
+  const j = await r.json();
+  return { sha:j.sha, text:b64decode(j.content) };
+}
+
+async function putFile(path, contentStr, message, sha){
+  const body={ message, content:b64encode(contentStr) };
+  if(sha) body.sha=sha;
+  const r = await api("/contents/"+path, "PUT", body);
+  if(!r.ok) throw new Error(await readErr(r));
   return r.json();
 }
-function show(t, ok) { const m = document.getElementById("msg"); m.textContent = t; m.style.color = ok ? "var(--ok)" : "var(--fout)"; }
-async function boek() {
-  if (!ensureCfg()) return;
-  const datum = document.getElementById("datum").value, tijd = document.getElementById("tijd").value;
-  if (!datum || !tijd) return show("Vul datum en tijd in.", false);
-  try {
-    await gh("/actions/workflows/aanvraag.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: {
-      datum: datum, tijd: tijd, duur: document.getElementById("duur").value,
-      dryrun: document.getElementById("dryrun").checked ? "true" : "false" } }) });
-    show("Aanvraag verstuurd: " + datum + " " + tijd + ". Boeking volgt zodra het slot opent.", true);
-  } catch (e) { show("Mislukt: " + e.message, false); }
+
+async function readErr(r){
+  let detail=""; try{ const j=await r.json(); detail=j.message||""; }catch(e){}
+  if(r.status===401||r.status===403) return "Toegangssleutel ongeldig of verlopen. Tik op ⚙ rechtsboven en voer hem opnieuw in.";
+  return "Er ging iets mis ("+r.status+"). "+detail;
 }
-async function annuleer() {
-  if (!ensureCfg()) return;
-  const id = document.getElementById("resid").value.trim();
-  if (!id) return;
-  if (!confirm("Reservering " + id + " annuleren? Na 60 min kunnen er kosten zijn.")) return;
-  try {
-    await gh("/actions/workflows/annuleer.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { reserveringsid: id } }) });
-    show("Annulering gestart voor #" + id + ".", true);
-  } catch (e) { show("Mislukt: " + e.message, false); }
+
+function dispatchWatcher(){
+  // Best-effort: laat de boeker direct kijken (voor slots die al/bijna open zijn).
+  return api("/actions/workflows/watcher.yml/dispatches","POST",{ref:"main"}).catch(()=>{});
 }
-async function status() {
-  if (!ensureCfg()) return;
-  const el = document.getElementById("status");
-  el.innerHTML = "<div class='res'>Laden...</div>";
-  try {
-    let html = "";
-    // Vaste maandagboeking: status van de eerstvolgende maandag
-    try {
-      const nmd = new Date(); const add = (1 - nmd.getDay() + 7) % 7 || 7;
-      nmd.setDate(nmd.getDate() + add);
-      const ma = nmd.toISOString().slice(0, 10);
-      let maLine = "\u23f3 wordt vrijdagavond om 20:00 automatisch geboekt (lukt dat niet: 21:00)";
-      let maClass = "";
-      try {
-        const r20 = await ghRaw("/contents/results/result_" + ma + "_2000.json");
-        if (r20.success) { maLine = "\u2705 geboekt: 20:00-" + (r20.booking.end_time || "21:00") + " op " + r20.booking.court; maClass = " ok"; }
-        else {
-          const r21 = await ghRaw("/contents/results/result_" + ma + "_2100.json");
-          if (r21.success) { maLine = "\u2705 geboekt: 21:00-" + (r21.booking.end_time || "22:00") + " op " + r21.booking.court + " (20:00 was vol)"; maClass = " ok"; }
-          else { maLine = "\u274c niet gelukt (20:00 en 21:00 vol of fout)"; maClass = " fail"; }
-        }
-      } catch (e) { /* nog geen resultaat: standaardtekst */ }
-      html += "<div class='res" + maClass + "'><b>Vaste boeking \u2014 maandag " + ma.split("-").reverse().join("-") + ":</b><br>" + maLine + "</div>";
-    } catch (e) {}
-    try {
-      const files = await gh("/contents/results");
-      const recent = files.filter(f => f.name.startsWith("result_")).sort((a, b) => b.name.localeCompare(a.name)).slice(0, 5);
-      for (const f of recent) {
-        const d = await ghRaw("/contents/" + f.path);
-        const b = d.booking || {};
-        html += "<div class='res " + (d.success ? "ok" : "fail") + "'>" + d.date + " " + d.time +
-          (d.dry_run ? " (dry-run)" : "") + ": " + (d.success ? ("✅ " + (b.court || "") + " — id " + (b.id || "")) : "❌ niet gelukt") + "</div>";
-      }
-    } catch (e) { html += "<div class='res'>Nog geen resultaten.</div>"; }
-    try {
-      const reqs = await gh("/contents/requests");
-      for (const f of reqs.filter(f => f.name.endsWith(".json"))) html += "<div class='res'>⏳ in de wachtrij: " + f.name.replace(".json", "").replace("_", " ") + "</div>";
-    } catch (e) {}
-    const runs = await gh("/actions/runs?per_page=3");
-    for (const r of (runs.workflow_runs || [])) html += "<div class='res'>" + r.name + ": " + (r.status === "completed" ? r.conclusion : r.status) + " <small>" + new Date(r.created_at).toLocaleString("nl-NL") + "</small></div>";
-    el.innerHTML = html || "<div class='res'>Niets te tonen.</div>";
-  } catch (e) { el.innerHTML = "<div class='res fail'>Fout: " + e.message + "</div>"; }
+
+/* ---- UI ---- */
+function toggleSetup(){
+  const s=document.getElementById("setup");
+  s.classList.toggle("hidden");
+  if(!s.classList.contains("hidden")) document.getElementById("token").value="";
 }
-ensureCfg();
-const morgen = new Date(Date.now() + 4 * 86400000);
-document.getElementById("datum").value = morgen.toISOString().slice(0, 10);
-if (cfg().repo) status();
+function showTab(which){
+  const een=which==="een";
+  document.getElementById("tabEen").classList.toggle("active",een);
+  document.getElementById("tabHerh").classList.toggle("active",!een);
+  document.getElementById("paneEen").classList.toggle("hidden",!een);
+  document.getElementById("paneHerh").classList.toggle("hidden",een);
+  if(!een) laadRegels();
+}
+function saveToken(){
+  const t=document.getElementById("token").value.trim();
+  if(!t){ showMsg("setupMsg","Voer eerst je sleutel in.","err"); return; }
+  TOKEN=t; localStorage.setItem("padel_token",t);
+  showMsg("setupMsg","Opgeslagen ✓","ok");
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("appArea").classList.remove("hidden");
+}
+function requireToken(){
+  if(!TOKEN){ document.getElementById("setup").classList.remove("hidden"); document.getElementById("appArea").classList.add("hidden"); return false; }
+  return true;
+}
+
+/* ---- Eenmalig ---- */
+async function boekEenmalig(){
+  clearMsg("eMsg");
+  const date=document.getElementById("eDate").value;
+  const time=document.getElementById("eTime").value;
+  if(!date||!time){ showMsg("eMsg","Kies een datum en tijd.","err"); return; }
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(new Date(date) < today){ showMsg("eMsg","Die datum is al geweest.","err"); return; }
+  const btn=document.getElementById("eBtn"); btn.disabled=true; btn.textContent="Bezig…";
+  try{
+    await schrijfAanvraag(date,time,false);
+    let extra="";
+    const fb=document.getElementById("eFb").checked ? plusHour(time) : null;
+    if(fb){ await schrijfAanvraag(date,fb,true); extra=" Lukt "+time+" niet, dan wordt "+fb+" geprobeerd."; }
+    await dispatchWatcher();
+    const d=new Date(date);
+    const dag=DAYS[((d.getDay()+6)%7)+1];
+    showMsg("eMsg","✅ Ingepland: "+dag+" "+date+" om "+time+"."+extra+"<br>Wordt automatisch geboekt zodra het slot opent.","ok");
+  }catch(e){ showMsg("eMsg","⚠️ "+e.message,"err"); }
+  btn.disabled=false; btn.textContent="Inplannen";
+}
+
+async function schrijfAanvraag(date,time,isFallback){
+  const path="requests/"+date+"_"+hhmm(time)+".json";
+  const obj={date, time, duration:60};
+  if(isFallback) obj.is_fallback=true;
+  const existing=await getFile(path);
+  await putFile(path, JSON.stringify(obj), "Aanvraag "+date+" "+time, existing?existing.sha:null);
+}
+
+/* ---- Herhaald ---- */
+async function laadRegels(){
+  const list=document.getElementById("ruleList");
+  list.innerHTML='<div class="empty">Laden…</div>';
+  if(!requireToken()){ list.innerHTML=""; return; }
+  try{
+    const f=await getFile("recurring.json");
+    const rules = f ? (JSON.parse(f.text).rules||[]) : [];
+    if(!rules.length){ list.innerHTML='<div class="empty">Nog geen vaste reserveringen.</div>'; return; }
+    rules.sort((a,b)=>(a.weekday-b.weekday)|| a.time.localeCompare(b.time));
+    list.innerHTML="";
+    rules.forEach(r=>{
+      const div=document.createElement("div"); div.className="rule";
+      const fb = r.fallback ? "<small>Reserve: een uur later ("+r.fallback+")</small>" : "";
+      div.innerHTML='<div class="txt">Elke <b>'+DAYS[r.weekday]+'</b> om <b>'+r.time+'</b>'+fb+'</div>';
+      const btn=document.createElement("button"); btn.textContent="Verwijderen";
+      btn.onclick=()=>verwijderRegel(r.id);
+      div.appendChild(btn); list.appendChild(div);
+    });
+  }catch(e){ list.innerHTML='<div class="msg err" style="display:block">'+e.message+'</div>'; }
+}
+
+async function voegHerhalingToe(){
+  clearMsg("hMsg");
+  if(!requireToken()) return;
+  const wd=parseInt(document.getElementById("hDay").value,10);
+  const time=document.getElementById("hTime").value;
+  if(!time){ showMsg("hMsg","Kies een tijd.","err"); return; }
+  const btn=document.getElementById("hBtn"); btn.disabled=true; btn.textContent="Bezig…";
+  try{
+    const f=await getFile("recurring.json");
+    const data = f ? JSON.parse(f.text) : {rules:[]};
+    if(!data.rules) data.rules=[];
+    const id=wd+"-"+hhmm(time);
+    if(data.rules.some(r=>r.id===id)){ showMsg("hMsg","Die vaste reservering bestaat al.","info"); }
+    else{
+      const rule={id, weekday:wd, time, duration:60};
+      const fb=document.getElementById("hFb").checked ? plusHour(time) : null;
+      if(fb) rule.fallback=fb;
+      data.rules.push(rule);
+      await putFile("recurring.json", JSON.stringify(data,null,2)+"\n", "Vaste reservering "+DAYS[wd]+" "+time, f?f.sha:null);
+      showMsg("hMsg","✅ Toegevoegd: elke "+DAYS[wd]+" om "+time+".","ok");
+    }
+    await laadRegels();
+  }catch(e){ showMsg("hMsg","⚠️ "+e.message,"err"); }
+  btn.disabled=false; btn.textContent="Toevoegen";
+}
+
+async function verwijderRegel(id){
+  clearMsg("hMsg");
+  try{
+    const f=await getFile("recurring.json");
+    if(!f) return;
+    const data=JSON.parse(f.text);
+    data.rules=(data.rules||[]).filter(r=>r.id!==id);
+    await putFile("recurring.json", JSON.stringify(data,null,2)+"\n", "Vaste reservering verwijderd", f.sha);
+    showMsg("hMsg","Verwijderd.","info");
+    await laadRegels();
+  }catch(e){ showMsg("hMsg","⚠️ "+e.message,"err"); }
+}
+
+/* ---- init ---- */
+(function init(){
+  const d=new Date(); d.setDate(d.getDate()+1);
+  document.getElementById("eDate").min=new Date().toISOString().slice(0,10);
+  document.getElementById("eDate").value=d.toISOString().slice(0,10);
+  if(requireToken()){ document.getElementById("appArea").classList.remove("hidden"); }
+})();
 </script>
 </body>
 </html>
