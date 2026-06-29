@@ -84,6 +84,9 @@
       <div class="check"><input type="checkbox" id="eFb" checked><label for="eFb" style="margin:0;color:var(--ink);font-weight:500">Probeer een uur later als het vol is</label></div>
       <button class="primary" id="eBtn" onclick="boekEenmalig()">Inplannen</button>
       <div class="msg" id="eMsg"></div>
+
+      <h2 style="margin-top:22px">Geplande eenmalige boekingen</h2>
+      <div id="geplandList"><div class="empty">Laden…</div></div>
     </div>
 
     <!-- HERHAALD -->
@@ -175,7 +178,7 @@ function showTab(which){
   document.getElementById("tabHerh").classList.toggle("active",!een);
   document.getElementById("paneEen").classList.toggle("hidden",!een);
   document.getElementById("paneHerh").classList.toggle("hidden",een);
-  if(!een) laadRegels();
+  if(een) laadGepland(); else laadRegels();
 }
 function saveToken(){
   const t=document.getElementById("token").value.trim();
@@ -184,6 +187,7 @@ function saveToken(){
   showMsg("setupMsg","Opgeslagen ✓","ok");
   document.getElementById("setup").classList.add("hidden");
   document.getElementById("appArea").classList.remove("hidden");
+  laadGepland();
 }
 function requireToken(){
   if(!TOKEN){ document.getElementById("setup").classList.remove("hidden"); document.getElementById("appArea").classList.add("hidden"); return false; }
@@ -208,6 +212,7 @@ async function boekEenmalig(){
     const d=new Date(date);
     const dag=DAYS[((d.getDay()+6)%7)+1];
     showMsg("eMsg","✅ Ingepland: "+dag+" "+date+" om "+time+"."+extra+"<br>Wordt automatisch geboekt zodra het slot opent.","ok");
+    laadGepland();
   }catch(e){ showMsg("eMsg","⚠️ "+e.message,"err"); }
   btn.disabled=false; btn.textContent="Inplannen";
 }
@@ -223,7 +228,7 @@ async function schrijfAanvraag(date,time,isFallback){
 /* ---- Herhaald ---- */
 async function laadRegels(){
   const list=document.getElementById("ruleList");
-  list.innerHTML='<div class="empty">Laden…</div>';
+  list.innerHTML='<div class="empty">Laden…</div></div>';
   if(!requireToken()){ list.innerHTML=""; return; }
   try{
     const f=await getFile("recurring.json");
@@ -281,12 +286,45 @@ async function verwijderRegel(id){
   }catch(e){ showMsg("hMsg","⚠️ "+e.message,"err"); }
 }
 
+const MND=["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+
+function formatDateNL(dateStr){ const d=new Date(dateStr); return DAYS[((d.getDay()+6)%7)+1]+" "+d.getDate()+" "+MND[d.getMonth()]; }
+
+async function laadGepland(){
+  const list=document.getElementById("geplandList");
+  list.innerHTML='<div class="empty">Laden…</div></div>'.replace('</div></div>','</div>');
+  if(!requireToken()){ list.innerHTML=""; return; }
+  try{
+    const r=await api("/contents/requests");
+    if(r.status===404){ list.innerHTML='<div class="empty">Nog geen geplande boekingen.</div>'; return; }
+    if(!r.ok) throw new Error(await readErr(r));
+    const items=await r.json();
+    const byDate={};
+    items.filter(i=>i.name.endsWith(".json")).forEach(f=>{
+      const m=f.name.match(/^(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})\.json$/);
+      if(!m) return;
+      (byDate[m[1]]=byDate[m[1]]||[]).push(m[2]+":"+m[3]);
+    });
+    const dates=Object.keys(byDate).sort();
+    if(!dates.length){ list.innerHTML='<div class="empty">Nog geen geplande boekingen.</div>'; return; }
+    list.innerHTML="";
+    dates.forEach(date=>{
+      const times=byDate[date].sort();
+      const rest=times.slice(1);
+      const div=document.createElement("div"); div.className="rule";
+      const sub=rest.length?'<small>Reserve: '+rest.join(", ")+'</small>':'';
+      div.innerHTML='<div class="txt"><b>'+formatDateNL(date)+'</b> om <b>'+times[0]+'</b>'+sub+'</div>';
+      list.appendChild(div);
+    });
+  }catch(e){ list.innerHTML='<div class="msg err" style="display:block">'+e.message+'</div>'; }
+}
+
 /* ---- init ---- */
 (function init(){
   const d=new Date(); d.setDate(d.getDate()+1);
   document.getElementById("eDate").min=new Date().toISOString().slice(0,10);
   document.getElementById("eDate").value=d.toISOString().slice(0,10);
-  if(requireToken()){ document.getElementById("appArea").classList.remove("hidden"); }
+  if(requireToken()){ document.getElementById("appArea").classList.remove("hidden"); laadGepland(); }
 })();
 </script>
 </body>
